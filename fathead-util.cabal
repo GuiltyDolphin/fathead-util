@@ -4,17 +4,20 @@
 name:                fathead-util
 version:             0.1.0.0
 synopsis:            Utilities for working with DuckDuckHack's FatHead Instant Answers
--- description:
+description:         Utilities for working with DuckDuckHack's FatHead Instant Answers
 homepage:            https://github.com/guiltydolphin/fathead-util
 license:             GPL-3
 license-file:        LICENSE
 author:              Ben Moon
 maintainer:          guiltydolphin@gmail.com
--- copyright:
+copyright:           (c) 2016 Ben Moon
 category:            Development
 build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
+source-repository head
+  type: git
+  location: git://github.com/guiltydolphin/fathead-util.git
 
 library
   -- exposed-modules:
