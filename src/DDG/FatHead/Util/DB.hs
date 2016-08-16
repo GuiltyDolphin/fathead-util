@@ -13,20 +13,9 @@ import Data.Char (ord)
 import Data.Csv
 import qualified Data.Text as DT
 import qualified Data.ByteString.Lazy as BSZ
+import qualified Data.ByteString as BS
 import Data.Text (Text)
 import Network.URI (URI)
-
-
-data EntryType = EntryArticle
-               | EntryDisambiguation
-               | EntryRedirect
-
-
--- | The type of entry in the DB.
-instance ToField EntryType where
-  toField EntryArticle = "A"
-  toField EntryDisambiguation = "D"
-  toField EntryRedirect = "R"
 
 
 type FieldText = String
@@ -46,39 +35,52 @@ instance ToField URI where
   toField = toField . show
 
 
-data Entry = Entry
-  { entryTitle :: !Title
-  , entryType  :: EntryType
-  , entryAlias :: Maybe Title
-  , entryCategories :: Maybe Categories
-  , entryDisambiguation :: Maybe Disambugation
-  , entryAbstract :: Maybe Abstract
-  , entryUrl :: Maybe URI
-  }
+data Entry =
+  EntryArticle { articleTitle :: Title
+               , articleCategories :: Maybe Categories
+               , articleAbstract :: Abstract
+               , articleUrl :: URI
+               }
+  | EntryRedirect { redirectFrom :: Title
+                  , redirectTo   :: Title
+                  }
+  | EntryDisambiguation { disambiguationTitle :: Title
+                        , disambiguationD     :: Disambugation
+                        }
 
 
 emptyField :: Field
 emptyField = toField ("" :: FieldText)
 
 
+typeArticle, typeDisambiguation, typeRedirect :: (Name, Field)
+typeArticle        = ("type", "A")
+typeDisambiguation = ("type", "D")
+typeRedirect       = ("type", "R")
+
+
 instance ToNamedRecord Entry where
-  toNamedRecord (Entry { entryTitle          = title
-                       , entryType           = eType
-                       , entryAlias          = alias
-                       , entryCategories     = categories
-                       , entryDisambiguation = disambiguation
-                       , entryAbstract       = abstract
-                       , entryUrl            = url }) =
-    namedRecord ([ "title"          .= toField title
-                 , "type"           .= toField eType
-                 , "redirect"       .= toField alias
-                 , "categories"     .= toField categories
+  toNamedRecord (EntryRedirect { redirectFrom = from, redirectTo = to }) =
+    namedRecord ([ "title" .= toField from
+                 , "redirect" .= toField to
+                 , typeRedirect ] ++
+      emptyFieldsExcept ["title", "type", "redirect"])
+  toNamedRecord (EntryDisambiguation { disambiguationTitle = title
+                                     , disambiguationD = disambiguation }) =
+    namedRecord ([ "title" .= toField title
                  , "disambiguation" .= toField disambiguation
-                 , "abstract"       .= toField abstract
-                 , "source_url"     .= toField url
-                 ] ++ empties [ "null1", "null2", "null3", "external_links"
-                              , "see_also", "images" ])
-    where empties = fmap (.= emptyField)
+                 , typeDisambiguation ] ++
+      emptyFieldsExcept ["title", "type", "disambiguation"])
+  toNamedRecord (EntryArticle { articleTitle = title
+                              , articleCategories = cs
+                              , articleAbstract = a
+                              , articleUrl = u }) =
+    namedRecord ([ "title"      .= toField title
+                 , "categories" .= toField cs
+                 , "abstract"   .= toField a
+                 , "souce_url"  .= toField u
+                 , typeArticle ] ++
+      emptyFieldsExcept ["title", "type", "categories", "abstract", "source_url"])
 
 
 encodeOptions :: EncodeOptions
@@ -90,34 +92,34 @@ encodeOptions = defaultEncodeOptions { encDelimiter = tab
   where tab = fromIntegral . ord $ '\t'
 
 
+outputFields :: [BS.ByteString]
+outputFields = [ "title" , "type", "redirect", "null1"
+               , "categories", "null2", "see_also", "null3"
+               , "external_links", "disambiguation"
+               , "images", "abstract", "source_url"
+               ]
+
+
+emptyFieldsExcept :: [BS.ByteString] -> [(Name, Field)]
+emptyFieldsExcept xs = fmap (`namedField` emptyField) $ filter (`notElem` xs) outputFields
+
+
 outputHeader :: Header
-outputHeader = header [ "title" , "type", "redirect", "null1"
-                      , "categories", "null2", "see_also", "null3"
-                      , "external_links", "disambiguation"
-                      , "images", "abstract", "source_url"
-                      ]
+outputHeader = header outputFields
 
 
-article :: Title -> Abstract -> URI -> Entry
-article t a u = Entry { entryTitle =  t
-                    , entryType  = EntryArticle
-                    , entryAlias = Nothing
-                    , entryCategories = Nothing
-                    , entryDisambiguation = Nothing
-                    , entryAbstract = Just a
-                    , entryUrl = Just u
-                    }
+article :: Title -> Abstract -> URI -> Categories -> Entry
+article t a u cs = EntryArticle { articleTitle =  t
+                             , articleCategories = Just cs
+                             , articleAbstract = a
+                             , articleUrl = u
+                             }
 
 
 alias :: Title -> Title -> Entry
-alias orig new = Entry { entryTitle = new
-                       , entryType  = EntryRedirect
-                       , entryAlias = Just orig
-                       , entryCategories = Nothing
-                       , entryDisambiguation = Nothing
-                       , entryAbstract = Nothing
-                       , entryUrl = Nothing
-                       }
+alias orig new = EntryRedirect { redirectFrom = new
+                               , redirectTo   = orig
+                               }
 
 
 writeOutput :: [Entry] -> IO ()
