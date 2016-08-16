@@ -5,6 +5,7 @@ module DDG.FatHead.Util.DB
   , Title(..)
   , redirect
   , article
+  , disambiguation
   , writeOutput
   ) where
 
@@ -16,12 +17,21 @@ import qualified Data.ByteString.Lazy as BSZ
 import qualified Data.ByteString as BS
 import Data.Text (Text)
 import Network.URI (URI)
+import Data.Monoid ((<>))
+import Data.List (intercalate)
 
 
 type FieldText = String
 newtype Title = Title { getTitle :: String } deriving (ToField)
-type Disambugation = Text
 type Abstract = String
+
+
+newtype Disambiguation = Disambiguation { getDisambiguation :: [(Entry, String)] }
+
+
+instance ToField Disambiguation where
+  toField (Disambiguation xs) = toField . intercalate "\\n"
+    $ fmap (\(e,d) -> concat ["*[[", getTitle (entryTitle e), "]], ", d, "."]) xs
 
 
 newtype Categories = Categories { getCategories :: [Text] }
@@ -45,8 +55,14 @@ data Entry =
                   , redirectTo   :: Title
                   }
   | EntryDisambiguation { disambiguationTitle :: Title
-                        , disambiguationD     :: Disambugation
+                        , disambiguationD     :: Disambiguation
                         }
+
+
+entryTitle :: Entry -> Title
+entryTitle a@(EntryArticle{}) = articleTitle a
+entryTitle r@(EntryRedirect{}) = redirectFrom r
+entryTitle d@(EntryDisambiguation{}) = disambiguationTitle d
 
 
 emptyField :: Field
@@ -122,6 +138,13 @@ redirect :: Title -> Title -> Entry
 redirect from to = EntryRedirect { redirectFrom = from
                                  , redirectTo   = to
                                  }
+
+
+-- | Create a disambiguation page for the given title.
+disambiguation :: Title -> Disambiguation -> Entry
+disambiguation t d = EntryDisambiguation { disambiguationTitle = t
+                                         , disambiguationD = d
+                                         }
 
 
 writeOutput :: [Entry] -> IO ()
