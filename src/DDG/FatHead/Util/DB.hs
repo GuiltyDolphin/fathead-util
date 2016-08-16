@@ -3,7 +3,7 @@
 module DDG.FatHead.Util.DB
   ( Entry
   , Title(..)
-  , alias
+  , redirect
   , article
   , writeOutput
   ) where
@@ -116,10 +116,12 @@ article t a u cs = EntryArticle { articleTitle =  t
                              }
 
 
-alias :: Title -> Title -> Entry
-alias orig new = EntryRedirect { redirectFrom = new
-                               , redirectTo   = orig
-                               }
+-- | @redirect from to@ creates an 'Entry' that redirects
+-- queries for @from@ to the entry at @to@.
+redirect :: Title -> Title -> Entry
+redirect from to = EntryRedirect { redirectFrom = from
+                                 , redirectTo   = to
+                                 }
 
 
 writeOutput :: [Entry] -> IO ()
