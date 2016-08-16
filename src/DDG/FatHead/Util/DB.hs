@@ -2,7 +2,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module DDG.FatHead.Util.DB
   ( Entry
-  , Title(..)
+  , Title
+  , title
   , redirect
   , article
   , disambiguation
@@ -22,7 +23,17 @@ import Data.List (intercalate)
 
 
 type FieldText = String
+
+
+-- | The title of an entry.
 newtype Title = Title { getTitle :: String } deriving (ToField)
+
+
+-- | Construct an 'Entry' title from a 'String'.
+title :: String -> Title
+title = Title
+
+
 type Abstract = String
 
 
