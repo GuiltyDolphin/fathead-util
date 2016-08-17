@@ -105,7 +105,7 @@ instance ToNamedRecord Entry where
     namedRecord ([ "title"      .= toField title
                  , "categories" .= toField cs
                  , "abstract"   .= toField a
-                 , "souce_url"  .= toField u
+                 , "source_url"  .= toField u
                  , typeArticle ] ++
       emptyFieldsExcept ["title", "type", "categories", "abstract", "source_url"])
 
