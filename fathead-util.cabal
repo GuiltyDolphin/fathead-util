@@ -20,7 +20,7 @@ source-repository head
   location: git://github.com/guiltydolphin/fathead-util.git
 
 library
-  -- exposed-modules:
+  exposed-modules:     DDG.FatHead.Util
   other-modules:       DDG.FatHead.Util.DB
                      , DDG.FatHead.Util.Parse
   -- other-extensions:
