@@ -3,4 +3,10 @@ module DDG.FatHead.Util
   ) where
 
 
-import qualified DDG.FatHead.Util.DB
+import DDG.FatHead.Util.DB ( Entry
+                           , article
+                           , disambiguation
+                           , redirect
+                           , title
+                           , writeOutput
+                           )
